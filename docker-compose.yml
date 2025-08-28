@@ -1,0 +1,64 @@
+# docker-compose.yml
+
+services:
+  # PHP Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: steam-player-stats-app
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      # CORRECCIÓN: Debe estar en la misma red que los otros servicios.
+      - steam-player-stats-network
+    depends_on:
+      - db
+
+  # Nginx Web Server Service
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: steam-player-stats-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      # Este ya estaba correcto.
+      - steam-player-stats-network
+    depends_on:
+      - app
+
+  # MySQL Database Service
+  db:
+    image: mysql:8.0
+    container_name: steam-player-stats-db # Cambiado de -appdb a -db por consistencia
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-password}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
+      MYSQL_USER: ${DB_USERNAME:-user}
+    volumes:
+      # MEJORA: Usar un volumen nombrado gestionado por Docker.
+      - dbdata:/var/lib/mysql
+    ports:
+      - "33067:3306"
+    networks:
+      # CORRECCIÓN: Eliminado el "-network" extra al final.
+      - steam-player-stats-network
+
+# MEJORA: Definición de volúmenes nombrados.
+volumes:
+  dbdata:
+    driver: local
+
+# Docker Networks
+networks:
+  steam-player-stats-network:
+    driver: bridge
