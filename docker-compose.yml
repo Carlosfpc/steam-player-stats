@@ -12,6 +12,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html
+      - ./docker/app/custom.ini:/usr/local/etc/php/conf.d/docker-php-ext-custom.ini
     networks:
       # CORRECCIÓN: Debe estar en la misma red que los otros servicios.
       - steam-player-stats-network
@@ -52,6 +53,25 @@ services:
     networks:
       # CORRECCIÓN: Eliminado el "-network" extra al final.
       - steam-player-stats-network
+
+    # Laravel Queue Worker (usando el driver de base de datos)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: steam-player-stats-worker
+    restart: unless-stopped
+    # El comando que ejecutará este contenedor para procesar la cola
+    command: php artisan queue:work --sleep=3 --tries=3
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - steam-player-stats-network
+    # Depende de la app y la base de datos (ya no necesita a Redis)
+    depends_on:
+      - app
+      - db
 
 # MEJORA: Definición de volúmenes nombrados.
 volumes:
