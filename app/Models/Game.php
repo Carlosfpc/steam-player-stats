@@ -9,7 +9,7 @@ class Game extends Model
 {
     use HasFactory;
 
-    protected $primayKey = "appid";
+    protected $primaryKey = "appid";
 
     public $incrementing = false;
 
